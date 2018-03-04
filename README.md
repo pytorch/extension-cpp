@@ -1,7 +1,7 @@
 # C++/CUDA Extensions in PyTorch
 
 An example of writing a C++ extension for PyTorch. See
-[here](http://pytorch.org/docs/0.3.1/notes/cpp-extensions.html) for the accompanying tutorial.
+[here](http://pytorch.org/docs/master/notes/cpp-extensions.html) for the accompanying tutorial.
 
 There are a few "sights" you can metaphorically visit in this repository:
 
