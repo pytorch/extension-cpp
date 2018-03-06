@@ -24,6 +24,11 @@ def check_equal(first, second, verbose):
         np.testing.assert_allclose(x, y, err_msg="Index: {}".format(i))
 
 
+def zero_grad(variables):
+    for variable in variables:
+        variable.grad.zero_()
+
+
 def check_forward(variables, with_cuda, verbose):
     baseline_values = python.lltm_baseline.LLTMFunction.apply(*variables)
     cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
@@ -44,6 +49,8 @@ def check_backward(variables, with_cuda, verbose):
     (baseline_values[0] + baseline_values[1]).sum().backward()
     grad_baseline = [var.grad for var in variables]
 
+    zero_grad(variables)
+
     cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
     (cpp_values[0] + cpp_values[1]).sum().backward()
     grad_cpp = [var.grad for var in variables]
@@ -53,6 +60,7 @@ def check_backward(variables, with_cuda, verbose):
     print('Ok')
 
     if with_cuda:
+        zero_grad(variables)
         cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
         (cuda_values[0] + cuda_values[1]).sum().backward()
         grad_cuda = [var.grad for var in variables]
