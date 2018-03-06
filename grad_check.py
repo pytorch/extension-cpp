@@ -35,7 +35,5 @@ for i, var in enumerate(variables):
         var = var.cuda()
     variables[i] = Variable(var.double(), requires_grad=True)
 
-print(LLTMFunction.apply(*variables))
-
 if gradcheck(LLTMFunction.apply, variables):
     print('Ok')
