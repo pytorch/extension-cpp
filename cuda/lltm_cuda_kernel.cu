@@ -45,12 +45,13 @@ __global__ void lltm_cuda_forward_kernel(
     scalar_t* __restrict__ output_gate,
     scalar_t* __restrict__ candidate_cell,
     size_t state_size) {
-  const auto column = blockIdx.x * blockDim.x + threadIdx.x;
-  const auto index = blockIdx.y * state_size + column;
+  const int column = blockIdx.x * blockDim.x + threadIdx.x;
+  const int index = blockIdx.y * state_size + column;
+  const int gates_row = blockIdx.y * (state_size * 3);
   if (column < state_size) {
-    input_gate[index] = sigmoid(gates[index]);
-    output_gate[index] = sigmoid(gates[state_size + index]);
-    candidate_cell[index] = elu(gates[2 * state_size + index]);
+    input_gate[index] = sigmoid(gates[gates_row + column]);
+    output_gate[index] = sigmoid(gates[gates_row + state_size + column]);
+    candidate_cell[index] = elu(gates[gates_row + 2 * state_size + column]);
     new_cell[index] =
         old_cell[index] + candidate_cell[index] * input_gate[index];
     new_h[index] = tanh(new_cell[index]) * output_gate[index];
@@ -104,8 +105,8 @@ std::vector<at::Tensor> lltm_cuda_forward(
   auto X = at::cat({old_h, input}, /*dim=*/1);
   auto gates = at::addmm(bias, X, weights.transpose(0, 1));
 
-  const auto batch_size = old_cell.size(0);
-  const auto state_size = old_cell.size(1);
+  const size_t batch_size = old_cell.size(0);
+  const size_t state_size = old_cell.size(1);
 
   auto new_h = at::zeros_like(old_cell);
   auto new_cell = at::zeros_like(old_cell);
@@ -114,7 +115,7 @@ std::vector<at::Tensor> lltm_cuda_forward(
   auto candidate_cell = at::zeros_like(old_cell);
 
   const int threads = 1024;
-  const dim3 blocks(batch_size, (state_size + threads - 1) / threads);
+  const dim3 blocks((state_size + threads - 1) / threads, batch_size);
 
   AT_DISPATCH_FLOATING_TYPES(gates.type(), "lltm_forward_cuda", ([&] {
     lltm_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
@@ -148,7 +149,7 @@ std::vector<at::Tensor> lltm_cuda_backward(
   const auto state_size = new_cell.size(1);
 
   const int threads = 1024;
-  const dim3 blocks(batch_size, (state_size + threads - 1) / threads);
+  const dim3 blocks((state_size + threads - 1) / threads, batch_size);
 
   AT_DISPATCH_FLOATING_TYPES(X.type(), "lltm_forward_cuda", ([&] {
     lltm_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
