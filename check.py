@@ -29,6 +29,10 @@ def zero_grad(variables):
         variable.grad.zero_()
 
 
+def get_grads(variables):
+    return [var.grad.clone() for var in variables]
+
+
 def check_forward(variables, with_cuda, verbose):
     baseline_values = python.lltm_baseline.LLTMFunction.apply(*variables)
     cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
@@ -47,13 +51,13 @@ def check_forward(variables, with_cuda, verbose):
 def check_backward(variables, with_cuda, verbose):
     baseline_values = python.lltm_baseline.LLTMFunction.apply(*variables)
     (baseline_values[0] + baseline_values[1]).sum().backward()
-    grad_baseline = [var.grad for var in variables]
+    grad_baseline = get_grads(variables)
 
     zero_grad(variables)
 
     cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
     (cpp_values[0] + cpp_values[1]).sum().backward()
-    grad_cpp = [var.grad for var in variables]
+    grad_cpp = get_grads(variables)
 
     print('Backward: Baseline (Python) vs. C++ ... ', end='')
     check_equal(grad_baseline, grad_cpp, verbose)
@@ -63,7 +67,7 @@ def check_backward(variables, with_cuda, verbose):
         zero_grad(variables)
         cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
         (cuda_values[0] + cuda_values[1]).sum().backward()
-        grad_cuda = [var.grad for var in variables]
+        grad_cuda = get_grads(variables)
 
         print('Backward: Baseline (Python) vs. CUDA ... ', end='')
         check_equal(grad_baseline, grad_cuda, verbose)

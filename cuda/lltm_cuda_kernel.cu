@@ -72,19 +72,22 @@ __global__ void lltm_cuda_backward_kernel(
     size_t state_size) {
   const int column = blockIdx.x * blockDim.x + threadIdx.x;
   const int index = blockIdx.y * state_size + column;
+  const int gates_row = blockIdx.y * (state_size * 3);
   if (column < state_size) {
     const auto d_output_gate = tanh(new_cell[index]) * grad_h[index];
     const auto d_tanh_new_cell = output_gate[index] * grad_h[index];
     const auto d_new_cell =
         d_tanh(new_cell[index]) * d_tanh_new_cell + grad_cell[index];
 
+
     d_old_cell[index] = d_new_cell;
     const auto d_candidate_cell = input_gate[index] * d_new_cell;
     const auto d_input_gate = candidate_cell[index] * d_new_cell;
 
-    const auto input_gate_index = index;
-    const auto output_gate_index = state_size + index;
-    const auto candidate_cell_index = 2 * state_size + index;
+
+    const auto input_gate_index = gates_row + column;
+    const auto output_gate_index = gates_row + state_size + column;
+    const auto candidate_cell_index = gates_row + 2 * state_size + column;
 
     d_gates[input_gate_index] =
         d_input_gate * d_sigmoid(gate_weights[input_gate_index]);
@@ -105,8 +108,8 @@ std::vector<at::Tensor> lltm_cuda_forward(
   auto X = at::cat({old_h, input}, /*dim=*/1);
   auto gates = at::addmm(bias, X, weights.transpose(0, 1));
 
-  const size_t batch_size = old_cell.size(0);
-  const size_t state_size = old_cell.size(1);
+  const auto batch_size = old_cell.size(0);
+  const auto state_size = old_cell.size(1);
 
   auto new_h = at::zeros_like(old_cell);
   auto new_cell = at::zeros_like(old_cell);
@@ -119,8 +122,8 @@ std::vector<at::Tensor> lltm_cuda_forward(
 
   AT_DISPATCH_FLOATING_TYPES(gates.type(), "lltm_forward_cuda", ([&] {
     lltm_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
-        gates.data<scalar_t>(),
-        old_cell.data<scalar_t>(),
+        gates.contiguous().data<scalar_t>(),
+        old_cell.contiguous().data<scalar_t>(),
         new_h.data<scalar_t>(),
         new_cell.data<scalar_t>(),
         input_gate.data<scalar_t>(),
@@ -155,13 +158,13 @@ std::vector<at::Tensor> lltm_cuda_backward(
     lltm_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
         d_old_cell.data<scalar_t>(),
         d_gates.data<scalar_t>(),
-        grad_h.data<scalar_t>(),
-        grad_cell.data<scalar_t>(),
-        new_cell.data<scalar_t>(),
-        input_gate.data<scalar_t>(),
-        output_gate.data<scalar_t>(),
-        candidate_cell.data<scalar_t>(),
-        gate_weights.data<scalar_t>(),
+        grad_h.contiguous().data<scalar_t>(),
+        grad_cell.contiguous().data<scalar_t>(),
+        new_cell.contiguous().data<scalar_t>(),
+        input_gate.contiguous().data<scalar_t>(),
+        output_gate.contiguous().data<scalar_t>(),
+        candidate_cell.contiguous().data<scalar_t>(),
+        gate_weights.contiguous().data<scalar_t>(),
         state_size);
   }));
 
@@ -172,5 +175,5 @@ std::vector<at::Tensor> lltm_cuda_backward(
   auto d_old_h = d_X.slice(/*dim=*/1, 0, state_size);
   auto d_input = d_X.slice(/*dim=*/1, state_size);
 
-  return {d_old_h, d_input, d_weights, d_bias, d_old_cell};
+  return {d_old_h, d_input, d_weights, d_bias, d_old_cell, d_gates};
 }

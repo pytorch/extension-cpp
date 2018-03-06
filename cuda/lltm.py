@@ -20,8 +20,9 @@ class LLTMFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_h, grad_cell):
-        d_old_h, d_input, d_weights, d_bias, d_old_cell = lltm_cuda.backward(
-            grad_h, grad_cell, *ctx.saved_variables)
+        outputs = lltm_cuda.backward(
+            grad_h.contiguous(), grad_cell.contiguous(), *ctx.saved_variables)
+        d_old_h, d_input, d_weights, d_bias, d_old_cell, d_gates = outputs
         return d_input, d_weights, d_bias, d_old_h, d_old_cell
 
 
