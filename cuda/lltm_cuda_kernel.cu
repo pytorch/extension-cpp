@@ -122,8 +122,8 @@ std::vector<at::Tensor> lltm_cuda_forward(
 
   AT_DISPATCH_FLOATING_TYPES(gates.type(), "lltm_forward_cuda", ([&] {
     lltm_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
-        gates.contiguous().data<scalar_t>(),
-        old_cell.contiguous().data<scalar_t>(),
+        gates.data<scalar_t>(),
+        old_cell.data<scalar_t>(),
         new_h.data<scalar_t>(),
         new_cell.data<scalar_t>(),
         input_gate.data<scalar_t>(),
@@ -158,13 +158,13 @@ std::vector<at::Tensor> lltm_cuda_backward(
     lltm_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
         d_old_cell.data<scalar_t>(),
         d_gates.data<scalar_t>(),
-        grad_h.contiguous().data<scalar_t>(),
-        grad_cell.contiguous().data<scalar_t>(),
-        new_cell.contiguous().data<scalar_t>(),
-        input_gate.contiguous().data<scalar_t>(),
-        output_gate.contiguous().data<scalar_t>(),
-        candidate_cell.contiguous().data<scalar_t>(),
-        gate_weights.contiguous().data<scalar_t>(),
+        grad_h.data<scalar_t>(),
+        grad_cell.data<scalar_t>(),
+        new_cell.data<scalar_t>(),
+        input_gate.data<scalar_t>(),
+        output_gate.data<scalar_t>(),
+        candidate_cell.data<scalar_t>(),
+        gate_weights.data<scalar_t>(),
         state_size);
   }));
 

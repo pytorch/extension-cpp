@@ -25,6 +25,8 @@ std::vector<at::Tensor> lltm_cuda_backward(
 // C++ interface
 
 #define CHECK_CUDA(x) AT_ASSERT(x.type().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x) AT_ASSERT(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 std::vector<at::Tensor> lltm_forward(
     at::Tensor input,
@@ -32,11 +34,11 @@ std::vector<at::Tensor> lltm_forward(
     at::Tensor bias,
     at::Tensor old_h,
     at::Tensor old_cell) {
-  CHECK_CUDA(input);
-  CHECK_CUDA(weights);
-  CHECK_CUDA(bias);
-  CHECK_CUDA(old_h);
-  CHECK_CUDA(old_cell);
+  CHECK_INPUT(input);
+  CHECK_INPUT(weights);
+  CHECK_INPUT(bias);
+  CHECK_INPUT(old_h);
+  CHECK_INPUT(old_cell);
 
   return lltm_cuda_forward(input, weights, bias, old_h, old_cell);
 }
@@ -51,14 +53,14 @@ std::vector<at::Tensor> lltm_backward(
     at::Tensor X,
     at::Tensor gate_weights,
     at::Tensor weights) {
-  CHECK_CUDA(grad_h);
-  CHECK_CUDA(grad_cell);
-  CHECK_CUDA(input_gate);
-  CHECK_CUDA(output_gate);
-  CHECK_CUDA(candidate_cell);
-  CHECK_CUDA(X);
-  CHECK_CUDA(gate_weights);
-  CHECK_CUDA(weights);
+  CHECK_INPUT(grad_h);
+  CHECK_INPUT(grad_cell);
+  CHECK_INPUT(input_gate);
+  CHECK_INPUT(output_gate);
+  CHECK_INPUT(candidate_cell);
+  CHECK_INPUT(X);
+  CHECK_INPUT(gate_weights);
+  CHECK_INPUT(weights);
 
   return lltm_cuda_backward(
       grad_h,
