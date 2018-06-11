@@ -14,7 +14,7 @@ class LLTM(torch.nn.Module):
         # input_features + state_size because we will multiply with [input, h].
         self.weights = torch.nn.Parameter(
             torch.Tensor(3 * state_size, input_features + state_size))
-        self.bias = torch.nn.Parameter(torch.Tensor(3 * state_size))
+        self.bias = torch.nn.Parameter(torch.Tensor(1, 3 * state_size))
         self.reset_parameters()
 
     def reset_parameters(self):
