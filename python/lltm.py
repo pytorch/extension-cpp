@@ -31,14 +31,14 @@ class LLTM(torch.nn.Module):
         # Split the combined gate weight matrix into its components.
         gates = gate_weights.chunk(3, dim=1)
 
-        input_gate = F.sigmoid(gates[0])
-        output_gate = F.sigmoid(gates[1])
+        input_gate = torch.sigmoid(gates[0])
+        output_gate = torch.sigmoid(gates[1])
         # Here we use an ELU instead of the usual tanh.
         candidate_cell = F.elu(gates[2])
 
         # Compute the new cell state.
         new_cell = old_cell + candidate_cell * input_gate
         # Compute the new hidden state and output.
-        new_h = F.tanh(new_cell) * output_gate
+        new_h = torch.tanh(new_cell) * output_gate
 
         return new_h, new_cell

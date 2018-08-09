@@ -9,12 +9,12 @@ torch.manual_seed(42)
 
 
 def d_sigmoid(z):
-    s = F.sigmoid(z)
+    s = torch.sigmoid(z)
     return (1 - s) * s
 
 
 def d_tanh(z):
-    t = F.tanh(z)
+    t = torch.tanh(z)
     return 1 - (t * t)
 
 
@@ -32,12 +32,12 @@ class LLTMFunction(Function):
         gate_weights = F.linear(X, weights, bias)
         gates = gate_weights.chunk(3, dim=1)
 
-        input_gate = F.sigmoid(gates[0])
-        output_gate = F.sigmoid(gates[1])
+        input_gate = torch.sigmoid(gates[0])
+        output_gate = torch.sigmoid(gates[1])
         candidate_cell = F.elu(gates[2])
 
         new_cell = old_cell + candidate_cell * input_gate
-        new_h = F.tanh(new_cell) * output_gate
+        new_h = torch.tanh(new_cell) * output_gate
 
         ctx.save_for_backward(X, weights, input_gate, output_gate, old_cell,
                               new_cell, candidate_cell, gate_weights)
@@ -51,7 +51,7 @@ class LLTMFunction(Function):
 
         d_input = d_weights = d_bias = d_old_h = d_old_cell = None
 
-        d_output_gate = F.tanh(new_cell) * grad_h
+        d_output_gate = torch.tanh(new_cell) * grad_h
         d_tanh_new_cell = output_gate * grad_h
         d_new_cell = d_tanh(new_cell) * d_tanh_new_cell + grad_cell
 
