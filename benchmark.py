@@ -17,6 +17,7 @@ parser.add_argument('-s', '--state-size', type=int, default=128)
 parser.add_argument('-r', '--runs', type=int, default=100)
 parser.add_argument('--scale', choices=['s', 'ms', 'us'], default='us')
 parser.add_argument('-c', '--cuda', action='store_true')
+parser.add_argument('-d', '--double', action='store_true')
 options = parser.parse_args()
 
 if options.example == 'py':
@@ -27,16 +28,16 @@ else:
     from cuda.lltm import LLTM
     options.cuda = True
 
-X = torch.randn(options.batch_size, options.features)
-h = torch.randn(options.batch_size, options.state_size)
-C = torch.randn(options.batch_size, options.state_size)
-rnn = LLTM(options.features, options.state_size)
+device = torch.device("cuda") if options.cuda else torch.device("cpu")
+dtype = torch.float64 if options.double else torch.float32
 
-if options.cuda:
-    X = X.cuda()
-    h = h.cuda()
-    C = C.cuda()
-    rnn.cuda()
+kwargs = {'dtype': dtype,
+          'device': device,
+          'requires_grad': True}
+X = torch.randn(options.batch_size, options.features, **kwargs)
+h = torch.randn(options.batch_size, options.state_size, **kwargs)
+C = torch.randn(options.batch_size, options.state_size, **kwargs)
+rnn = LLTM(options.features, options.state_size).to(device, dtype)
 
 # Force CUDA initialization
 new_h, new_C = rnn(X, (h, C))

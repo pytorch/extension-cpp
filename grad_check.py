@@ -3,8 +3,7 @@ from __future__ import print_function
 
 import argparse
 import torch
-
-from torch.autograd import Variable, gradcheck
+from torch.autograd import gradcheck
 
 parser = argparse.ArgumentParser()
 parser.add_argument('example', choices=['py', 'cpp', 'cuda'])
@@ -22,18 +21,20 @@ else:
     from cuda.lltm import LLTMFunction
     options.cuda = True
 
-X = torch.randn(options.batch_size, options.features)
-h = torch.randn(options.batch_size, options.state_size)
-C = torch.randn(options.batch_size, options.state_size)
-W = torch.randn(3 * options.state_size, options.features + options.state_size)
-b = torch.randn(1, 3 * options.state_size)
+device = torch.device("cuda") if options.cuda else torch.device("cpu")
+
+kwargs = {'dtype': torch.float64,
+          'device': device,
+          'requires_grad': True}
+
+X = torch.randn(options.batch_size, options.features, **kwargs)
+h = torch.randn(options.batch_size, options.state_size, **kwargs)
+C = torch.randn(options.batch_size, options.state_size, **kwargs)
+W = torch.randn(3 * options.state_size, options.features + options.state_size, **kwargs)
+b = torch.randn(1, 3 * options.state_size, **kwargs)
 
 variables = [X, W, b, h, C]
 
-for i, var in enumerate(variables):
-    if options.cuda:
-        var = var.cuda()
-    variables[i] = Variable(var.double(), requires_grad=True)
 
 if gradcheck(LLTMFunction.apply, variables):
     print('Ok')
