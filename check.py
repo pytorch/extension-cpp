@@ -5,8 +5,6 @@ import argparse
 import numpy as np
 import torch
 
-from torch.autograd import Variable
-
 import python.lltm_baseline
 import cpp.lltm
 
@@ -85,20 +83,22 @@ options = parser.parse_args()
 
 if options.cuda:
     import cuda.lltm
-    options.cuda = True
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
-X = torch.randn(options.batch_size, options.features)
-h = torch.randn(options.batch_size, options.state_size)
-C = torch.randn(options.batch_size, options.state_size)
-W = torch.randn(3 * options.state_size, options.features + options.state_size)
-b = torch.randn(1, 3 * options.state_size)
+kwargs = {'dtype': torch.float64,
+          'device': device,
+          'requires_grad': True}
+X = torch.randn(options.batch_size,
+                options.features,
+                **kwargs)
+h = torch.randn(options.batch_size, options.state_size, **kwargs)
+C = torch.randn(options.batch_size, options.state_size, **kwargs)
+W = torch.randn(3 * options.state_size, options.features + options.state_size, **kwargs)
+b = torch.randn(1, 3 * options.state_size, **kwargs)
 
 variables = [X, W, b, h, C]
-
-for i, var in enumerate(variables):
-    if options.cuda:
-        var = var.cuda()
-    variables[i] = Variable(var.double(), requires_grad=True)
 
 if 'forward' in options.direction:
     check_forward(variables, options.cuda, options.verbose)

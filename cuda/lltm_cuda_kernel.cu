@@ -1,4 +1,4 @@
-#include <ATen/ATen.h>
+#include <torch/extension.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -99,23 +99,23 @@ __global__ void lltm_cuda_backward_kernel(
 }
 } // namespace
 
-std::vector<at::Tensor> lltm_cuda_forward(
-    at::Tensor input,
-    at::Tensor weights,
-    at::Tensor bias,
-    at::Tensor old_h,
-    at::Tensor old_cell) {
-  auto X = at::cat({old_h, input}, /*dim=*/1);
-  auto gates = at::addmm(bias, X, weights.transpose(0, 1));
+std::vector<torch::Tensor> lltm_cuda_forward(
+    torch::Tensor input,
+    torch::Tensor weights,
+    torch::Tensor bias,
+    torch::Tensor old_h,
+    torch::Tensor old_cell) {
+  auto X = torch::cat({old_h, input}, /*dim=*/1);
+  auto gates = torch::addmm(bias, X, weights.transpose(0, 1));
 
   const auto batch_size = old_cell.size(0);
   const auto state_size = old_cell.size(1);
 
-  auto new_h = at::zeros_like(old_cell);
-  auto new_cell = at::zeros_like(old_cell);
-  auto input_gate = at::zeros_like(old_cell);
-  auto output_gate = at::zeros_like(old_cell);
-  auto candidate_cell = at::zeros_like(old_cell);
+  auto new_h = torch::zeros_like(old_cell);
+  auto new_cell = torch::zeros_like(old_cell);
+  auto input_gate = torch::zeros_like(old_cell);
+  auto output_gate = torch::zeros_like(old_cell);
+  auto candidate_cell = torch::zeros_like(old_cell);
 
   const int threads = 1024;
   const dim3 blocks((state_size + threads - 1) / threads, batch_size);
@@ -135,18 +135,18 @@ std::vector<at::Tensor> lltm_cuda_forward(
   return {new_h, new_cell, input_gate, output_gate, candidate_cell, X, gates};
 }
 
-std::vector<at::Tensor> lltm_cuda_backward(
-    at::Tensor grad_h,
-    at::Tensor grad_cell,
-    at::Tensor new_cell,
-    at::Tensor input_gate,
-    at::Tensor output_gate,
-    at::Tensor candidate_cell,
-    at::Tensor X,
-    at::Tensor gate_weights,
-    at::Tensor weights) {
-  auto d_old_cell = at::zeros_like(new_cell);
-  auto d_gates = at::zeros_like(gate_weights);
+std::vector<torch::Tensor> lltm_cuda_backward(
+    torch::Tensor grad_h,
+    torch::Tensor grad_cell,
+    torch::Tensor new_cell,
+    torch::Tensor input_gate,
+    torch::Tensor output_gate,
+    torch::Tensor candidate_cell,
+    torch::Tensor X,
+    torch::Tensor gate_weights,
+    torch::Tensor weights) {
+  auto d_old_cell = torch::zeros_like(new_cell);
+  auto d_gates = torch::zeros_like(gate_weights);
 
   const auto batch_size = new_cell.size(0);
   const auto state_size = new_cell.size(1);
