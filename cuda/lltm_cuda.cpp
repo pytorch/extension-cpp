@@ -1,26 +1,26 @@
-#include <torch/torch.h>
+#include <torch/extension.h>
 
 #include <vector>
 
 // CUDA forward declarations
 
-std::vector<at::Tensor> lltm_cuda_forward(
-    at::Tensor input,
-    at::Tensor weights,
-    at::Tensor bias,
-    at::Tensor old_h,
-    at::Tensor old_cell);
+std::vector<torch::Tensor> lltm_cuda_forward(
+    torch::Tensor input,
+    torch::Tensor weights,
+    torch::Tensor bias,
+    torch::Tensor old_h,
+    torch::Tensor old_cell);
 
-std::vector<at::Tensor> lltm_cuda_backward(
-    at::Tensor grad_h,
-    at::Tensor grad_cell,
-    at::Tensor new_cell,
-    at::Tensor input_gate,
-    at::Tensor output_gate,
-    at::Tensor candidate_cell,
-    at::Tensor X,
-    at::Tensor gate_weights,
-    at::Tensor weights);
+std::vector<torch::Tensor> lltm_cuda_backward(
+    torch::Tensor grad_h,
+    torch::Tensor grad_cell,
+    torch::Tensor new_cell,
+    torch::Tensor input_gate,
+    torch::Tensor output_gate,
+    torch::Tensor candidate_cell,
+    torch::Tensor X,
+    torch::Tensor gate_weights,
+    torch::Tensor weights);
 
 // C++ interface
 
@@ -29,12 +29,12 @@ std::vector<at::Tensor> lltm_cuda_backward(
 #define CHECK_CONTIGUOUS(x) AT_ASSERTM(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
-std::vector<at::Tensor> lltm_forward(
-    at::Tensor input,
-    at::Tensor weights,
-    at::Tensor bias,
-    at::Tensor old_h,
-    at::Tensor old_cell) {
+std::vector<torch::Tensor> lltm_forward(
+    torch::Tensor input,
+    torch::Tensor weights,
+    torch::Tensor bias,
+    torch::Tensor old_h,
+    torch::Tensor old_cell) {
   CHECK_INPUT(input);
   CHECK_INPUT(weights);
   CHECK_INPUT(bias);
@@ -44,16 +44,16 @@ std::vector<at::Tensor> lltm_forward(
   return lltm_cuda_forward(input, weights, bias, old_h, old_cell);
 }
 
-std::vector<at::Tensor> lltm_backward(
-    at::Tensor grad_h,
-    at::Tensor grad_cell,
-    at::Tensor new_cell,
-    at::Tensor input_gate,
-    at::Tensor output_gate,
-    at::Tensor candidate_cell,
-    at::Tensor X,
-    at::Tensor gate_weights,
-    at::Tensor weights) {
+std::vector<torch::Tensor> lltm_backward(
+    torch::Tensor grad_h,
+    torch::Tensor grad_cell,
+    torch::Tensor new_cell,
+    torch::Tensor input_gate,
+    torch::Tensor output_gate,
+    torch::Tensor candidate_cell,
+    torch::Tensor X,
+    torch::Tensor gate_weights,
+    torch::Tensor weights) {
   CHECK_INPUT(grad_h);
   CHECK_INPUT(grad_cell);
   CHECK_INPUT(input_gate);

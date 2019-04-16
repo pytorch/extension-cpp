@@ -1,42 +1,42 @@
-#include <torch/torch.h>
+#include <torch/extension.h>
 
 #include <vector>
 
 // s'(z) = (1 - s(z)) * s(z)
-at::Tensor d_sigmoid(at::Tensor z) {
-  auto s = at::sigmoid(z);
+torch::Tensor d_sigmoid(torch::Tensor z) {
+  auto s = torch::sigmoid(z);
   return (1 - s) * s;
 }
 
 // tanh'(z) = 1 - tanh^2(z)
-at::Tensor d_tanh(at::Tensor z) {
+torch::Tensor d_tanh(torch::Tensor z) {
   return 1 - z.tanh().pow(2);
 }
 
 // elu'(z) = relu'(z) + { alpha * exp(z) if (alpha * (exp(z) - 1)) < 0, else 0}
-at::Tensor d_elu(at::Tensor z, at::Scalar alpha = 1.0) {
+torch::Tensor d_elu(torch::Tensor z, torch::Scalar alpha = 1.0) {
   auto e = z.exp();
   auto mask = (alpha * (e - 1)) < 0;
   return (z > 0).type_as(z) + mask.type_as(z) * (alpha * e);
 }
 
-std::vector<at::Tensor> lltm_forward(
-    at::Tensor input,
-    at::Tensor weights,
-    at::Tensor bias,
-    at::Tensor old_h,
-    at::Tensor old_cell) {
-  auto X = at::cat({old_h, input}, /*dim=*/1);
+std::vector<torch::Tensor> lltm_forward(
+    torch::Tensor input,
+    torch::Tensor weights,
+    torch::Tensor bias,
+    torch::Tensor old_h,
+    torch::Tensor old_cell) {
+  auto X = torch::cat({old_h, input}, /*dim=*/1);
 
-  auto gate_weights = at::addmm(bias, X, weights.transpose(0, 1));
+  auto gate_weights = torch::addmm(bias, X, weights.transpose(0, 1));
   auto gates = gate_weights.chunk(3, /*dim=*/1);
 
-  auto input_gate = at::sigmoid(gates[0]);
-  auto output_gate = at::sigmoid(gates[1]);
-  auto candidate_cell = at::elu(gates[2], /*alpha=*/1.0);
+  auto input_gate = torch::sigmoid(gates[0]);
+  auto output_gate = torch::sigmoid(gates[1]);
+  auto candidate_cell = torch::elu(gates[2], /*alpha=*/1.0);
 
   auto new_cell = old_cell + candidate_cell * input_gate;
-  auto new_h = at::tanh(new_cell) * output_gate;
+  auto new_h = torch::tanh(new_cell) * output_gate;
 
   return {new_h,
           new_cell,
@@ -47,17 +47,17 @@ std::vector<at::Tensor> lltm_forward(
           gate_weights};
 }
 
-std::vector<at::Tensor> lltm_backward(
-    at::Tensor grad_h,
-    at::Tensor grad_cell,
-    at::Tensor new_cell,
-    at::Tensor input_gate,
-    at::Tensor output_gate,
-    at::Tensor candidate_cell,
-    at::Tensor X,
-    at::Tensor gate_weights,
-    at::Tensor weights) {
-  auto d_output_gate = at::tanh(new_cell) * grad_h;
+std::vector<torch::Tensor> lltm_backward(
+    torch::Tensor grad_h,
+    torch::Tensor grad_cell,
+    torch::Tensor new_cell,
+    torch::Tensor input_gate,
+    torch::Tensor output_gate,
+    torch::Tensor candidate_cell,
+    torch::Tensor X,
+    torch::Tensor gate_weights,
+    torch::Tensor weights) {
+  auto d_output_gate = torch::tanh(new_cell) * grad_h;
   auto d_tanh_new_cell = output_gate * grad_h;
   auto d_new_cell = d_tanh(new_cell) * d_tanh_new_cell + grad_cell;
 
@@ -71,7 +71,7 @@ std::vector<at::Tensor> lltm_backward(
   d_candidate_cell *= d_elu(gates[2]);
 
   auto d_gates =
-      at::cat({d_input_gate, d_output_gate, d_candidate_cell}, /*dim=*/1);
+      torch::cat({d_input_gate, d_output_gate, d_candidate_cell}, /*dim=*/1);
 
   auto d_weights = d_gates.t().mm(X);
   auto d_bias = d_gates.sum(/*dim=*/0, /*keepdim=*/true);
