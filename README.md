@@ -14,4 +14,4 @@ There are a few "sights" you can metaphorically visit in this repository:
 
 ## Authors
 
-[Peter Goldsborough](https://github.com/goldsborough)
+[Asmatmaker](https://github.com/Asmatmaker)
