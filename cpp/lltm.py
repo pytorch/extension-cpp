@@ -1,30 +1,22 @@
 import math
+import os
 from torch import nn
 from torch.autograd import Function
+import glob
 import torch
+import torch.utils.cpp_extension
+import pkg_resources
 
-#import lltm_cpp
-torch.ops.load_library("cpp/build/lib.linux-x86_64-cpython-39/lltm_cpp.cpython-39-x86_64-linux-gnu.so")
+# Get the location of shared library for the lltm op, and load it.
+LIB_EXT = torch.utils.cpp_extension.LIB_EXT
+cpp_module_path = os.path.dirname(
+    pkg_resources.resource_filename(
+        pkg_resources.Requirement.parse('lltm_cpp'), "lltm_cpp.py"))
+cpp_lib_path = glob.glob(
+    os.path.join(cpp_module_path, f"lltm_cpp*{LIB_EXT}"))[0]
+torch.ops.load_library(cpp_lib_path)
 
 torch.manual_seed(42)
-
-
-class LLTMFunction(Function):
-    @staticmethod
-    def forward(ctx, input, weights, bias, old_h, old_cell):
-        outputs = torch.ops.myops.lltm(input, weights, bias, old_h, old_cell)
-        new_h, new_cell = outputs[:2]
-        variables = outputs[1:] + [weights]
-        ctx.save_for_backward(*variables)
-
-        return new_h, new_cell
-
-    @staticmethod
-    def backward(ctx, grad_h, grad_cell):
-        d_old_h, d_input, d_weights, d_bias, d_old_cell = torch.ops.myops.lltm.backward(
-            grad_h, grad_cell, *ctx.saved_variables)
-        return d_input, d_weights, d_bias, d_old_h, d_old_cell
-
 
 class LLTM(nn.Module):
     def __init__(self, input_features, state_size):
@@ -42,4 +34,4 @@ class LLTM(nn.Module):
             weight.data.uniform_(-stdv, +stdv)
 
     def forward(self, input, state):
-        return LLTMFunction.apply(input, self.weights, self.bias, *state)
+        return torch.ops.myops.lltm(input, self.weights, self.bias, *state)

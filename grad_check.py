@@ -13,16 +13,26 @@ parser.add_argument('-s', '--state-size', type=int, default=5)
 parser.add_argument('-c', '--cuda', action='store_true')
 options = parser.parse_args()
 
-torch.ops.load_library("cpp/build/lib.linux-x86_64-cpython-39/lltm_cpp.cpython-39-x86_64-linux-gnu.so")
-torch.ops.load_library("cuda/build/lib.linux-x86_64-cpython-39/lltm_cuda.cpython-39-x86_64-linux-gnu.so")
+cpp_module_path = os.path.dirname(
+    pkg_resources.resource_filename(
+        pkg_resources.Requirement.parse('lltm_cpp'), "lltm_cpp.py"))
+cpp_lib_path = glob.glob(os.path.join(cpp_module_path, "lltm_cpp*.so"))[0]
+torch.ops.load_library(cpp_lib_path)
+
+cuda_module_path = os.path.dirname(
+    pkg_resources.resource_filename(
+        pkg_resources.Requirement.parse('lltm_cuda'), "lltm_cuda.py"))
+cuda_lib_path = glob.glob(os.path.join(cuda_module_path, "lltm_cuda*.so"))[0]
+torch.ops.load_library(cuda_lib_path)
+
 
 if options.example == 'py':
     from python.lltm_baseline import LLTMFunction
-elif options.example == 'cpp':
-    from cpp.lltm import LLTMFunction
+    lltm_func = LLTMFunction.apply
 else:
-    from cuda.lltm import LLTMFunction
-    options.cuda = True
+    lltm_func = torch.ops.myops.lltm
+
+options.cuda |= (options.example == "cuda")
 
 device = torch.device("cuda") if options.cuda else torch.device("cpu")
 
@@ -39,5 +49,5 @@ b = torch.randn(1, 3 * options.state_size, **kwargs).to(device)
 variables = [X, W, b, h, C]
 
 
-if gradcheck(torch.ops.myops.lltm, variables):
+if gradcheck(lltm_func, variables):
     print('Ok')

@@ -3,12 +3,13 @@ from __future__ import print_function
 
 import argparse
 import numpy as np
+import os
+import glob
 import torch
+import torch.utils.cpp_extension
+import pkg_resources
 
 import python.lltm_baseline
-#import cpp.lltm
-torch.ops.load_library("cpp/build/lib.linux-x86_64-cpython-39/lltm_cpp.cpython-39-x86_64-linux-gnu.so")
-torch.ops.load_library("cuda/build/lib.linux-x86_64-cpython-39/lltm_cuda.cpython-39-x86_64-linux-gnu.so")
 
 def check_equal(first, second, verbose):
     if verbose:
@@ -35,8 +36,6 @@ def check_forward(variables, with_cuda, verbose):
     baseline_values = python.lltm_baseline.LLTMFunction.apply(*variables)
     cpp_variables = [v.cpu() for v in variables]
     cpp_values = torch.ops.myops.lltm(*cpp_variables)
-#    cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
-
 
     print('Forward: Baseline (Python) vs. C++ ... ', end='')
     check_equal(baseline_values, cpp_values, verbose)
@@ -45,7 +44,6 @@ def check_forward(variables, with_cuda, verbose):
     if with_cuda:
         cuda_variables = [v.cuda() for v in variables]
         cuda_values = torch.ops.myops.lltm(*cuda_variables)
-#        cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
         print('Forward: Baseline (Python) vs. CUDA ... ', end='')
         check_equal(baseline_values, cuda_values, verbose)
         print('Ok')
@@ -86,9 +84,22 @@ parser.add_argument('-c', '--cuda', action='store_true')
 parser.add_argument('-v', '--verbose', action='store_true')
 options = parser.parse_args()
 
+LIB_EXT = torch.utils.cpp_extension.LIB_EXT
+cpp_module_path = os.path.dirname(
+    pkg_resources.resource_filename(
+        pkg_resources.Requirement.parse('lltm_cpp'), "lltm_cpp.py"))
+cpp_lib_path = glob.glob(os.path.join(cpp_module_path, f"lltm_cpp*{LIB_EXT}"))[0]
+torch.ops.load_library(cpp_lib_path)
+
 if options.cuda:
     import cuda.lltm
     device = torch.device("cuda")
+
+    cuda_module_path = os.path.dirname(
+        pkg_resources.resource_filename(
+            pkg_resources.Requirement.parse('lltm_cuda'), "lltm_cuda.py"))
+    cuda_lib_path = glob.glob(os.path.join(cuda_module_path, f"lltm_cuda*{LIB_EXT}"))[0]
+    torch.ops.load_library(cuda_lib_path)
 else:
     device = torch.device("cpu")
 
@@ -104,6 +115,7 @@ W = torch.randn(3 * options.state_size, options.features + options.state_size, *
 b = torch.randn(1, 3 * options.state_size, **kwargs)
 
 variables = [X, W, b, h, C]
+
 
 if 'forward' in options.direction:
     check_forward(variables, options.cuda, options.verbose)
