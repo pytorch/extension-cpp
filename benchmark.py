@@ -3,9 +3,14 @@ from __future__ import print_function
 
 import argparse
 import math
+import os
+import glob
 import time
 
+
 import torch
+import torch.utils.cpp_extension
+import pkg_resources
 
 TIME_SCALES = {'s': 1, 'ms': 1000, 'us': 1000000}
 
@@ -20,6 +25,7 @@ parser.add_argument('-c', '--cuda', action='store_true')
 parser.add_argument('-d', '--double', action='store_true')
 options = parser.parse_args()
 
+LIB_EXT = torch.utils.cpp_extension.LIB_EXT
 if options.example == 'py':
     from python.lltm import LLTM
 elif options.example == 'cpp':
