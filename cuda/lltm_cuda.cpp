@@ -35,6 +35,8 @@ std::vector<torch::Tensor> lltm_forward(
     torch::Tensor bias,
     torch::Tensor old_h,
     torch::Tensor old_cell) {
+  std::cout << "CUDA!!!!" << std::endl;
+  
   CHECK_INPUT(input);
   CHECK_INPUT(weights);
   CHECK_INPUT(bias);
@@ -75,7 +77,13 @@ std::vector<torch::Tensor> lltm_backward(
       weights);
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &lltm_forward, "LLTM forward (CUDA)");
-  m.def("backward", &lltm_backward, "LLTM backward (CUDA)");
+// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+//   m.def("forward", &lltm_forward, "LLTM forward (CUDA)");
+//   m.def("backward", &lltm_backward, "LLTM backward (CUDA)");
+// }
+
+TORCH_LIBRARY_IMPL(myops, CUDA, m){
+  m.impl(TORCH_SELECTIVE_NAME("lltm"), TORCH_FN(lltm_forward));
+  m.impl(TORCH_SELECTIVE_NAME("lltm.backward"), TORCH_FN(lltm_backward));
 }
+

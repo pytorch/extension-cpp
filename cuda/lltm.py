@@ -3,7 +3,8 @@ from torch import nn
 from torch.autograd import Function
 import torch
 
-import lltm_cuda
+#import lltm_cuda
+torch.ops.load_library("cuda/build/lib.linux-x86_64-cpython-39/lltm_cuda.cpython-39-x86_64-linux-gnu.so")
 
 torch.manual_seed(42)
 
@@ -11,7 +12,7 @@ torch.manual_seed(42)
 class LLTMFunction(Function):
     @staticmethod
     def forward(ctx, input, weights, bias, old_h, old_cell):
-        outputs = lltm_cuda.forward(input, weights, bias, old_h, old_cell)
+        outputs = torch.ops.myops.lltm(input, weights, bias, old_h, old_cell)
         new_h, new_cell = outputs[:2]
         variables = outputs[1:] + [weights]
         ctx.save_for_backward(*variables)
@@ -20,7 +21,7 @@ class LLTMFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_h, grad_cell):
-        outputs = lltm_cuda.backward(
+        outputs = torch.ops.myops.lltm.backward(
             grad_h.contiguous(), grad_cell.contiguous(), *ctx.saved_variables)
         d_old_h, d_input, d_weights, d_bias, d_old_cell, d_gates = outputs
         return d_input, d_weights, d_bias, d_old_h, d_old_cell

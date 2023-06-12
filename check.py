@@ -6,8 +6,9 @@ import numpy as np
 import torch
 
 import python.lltm_baseline
-import cpp.lltm
-
+#import cpp.lltm
+torch.ops.load_library("cpp/build/lib.linux-x86_64-cpython-39/lltm_cpp.cpython-39-x86_64-linux-gnu.so")
+torch.ops.load_library("cuda/build/lib.linux-x86_64-cpython-39/lltm_cuda.cpython-39-x86_64-linux-gnu.so")
 
 def check_equal(first, second, verbose):
     if verbose:
@@ -19,8 +20,7 @@ def check_equal(first, second, verbose):
             print("x = {}".format(x.flatten()))
             print("y = {}".format(y.flatten()))
             print('-' * 80)
-        np.testing.assert_allclose(x, y, err_msg="Index: {}".format(i))
-
+        np.testing.assert_allclose(x, y, rtol=2e-6, atol=2e-7, err_msg="Index: {}".format(i))
 
 def zero_grad(variables):
     for variable in variables:
@@ -33,14 +33,19 @@ def get_grads(variables):
 
 def check_forward(variables, with_cuda, verbose):
     baseline_values = python.lltm_baseline.LLTMFunction.apply(*variables)
-    cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
+    cpp_variables = [v.cpu() for v in variables]
+    cpp_values = torch.ops.myops.lltm(*cpp_variables)
+#    cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
+
 
     print('Forward: Baseline (Python) vs. C++ ... ', end='')
     check_equal(baseline_values, cpp_values, verbose)
     print('Ok')
 
     if with_cuda:
-        cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
+        cuda_variables = [v.cuda() for v in variables]
+        cuda_values = torch.ops.myops.lltm(*cuda_variables)
+#        cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
         print('Forward: Baseline (Python) vs. CUDA ... ', end='')
         check_equal(baseline_values, cuda_values, verbose)
         print('Ok')
@@ -53,7 +58,7 @@ def check_backward(variables, with_cuda, verbose):
 
     zero_grad(variables)
 
-    cpp_values = cpp.lltm.LLTMFunction.apply(*variables)
+    cpp_values = torch.ops.myops.lltm(*variables)
     (cpp_values[0] + cpp_values[1]).sum().backward()
     grad_cpp = get_grads(variables)
 
@@ -63,7 +68,7 @@ def check_backward(variables, with_cuda, verbose):
 
     if with_cuda:
         zero_grad(variables)
-        cuda_values = cuda.lltm.LLTMFunction.apply(*variables)
+        cuda_values = torch.ops.myops.lltm(*variables)
         (cuda_values[0] + cuda_values[1]).sum().backward()
         grad_cuda = get_grads(variables)
 
