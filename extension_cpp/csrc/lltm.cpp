@@ -20,7 +20,7 @@ torch::Tensor d_elu(torch::Tensor z, torch::Scalar alpha = 1.0) {
   return (z > 0).type_as(z) + mask.type_as(z) * (alpha * e);
 }
 
-std::vector<torch::Tensor> lltm_forward(
+std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> lltm_forward(
     torch::Tensor input,
     torch::Tensor weights,
     torch::Tensor bias,
@@ -47,7 +47,7 @@ std::vector<torch::Tensor> lltm_forward(
           gate_weights};
 }
 
-std::vector<torch::Tensor> lltm_backward(
+std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> lltm_backward(
     torch::Tensor grad_h,
     torch::Tensor grad_cell,
     torch::Tensor new_cell,
@@ -84,7 +84,17 @@ std::vector<torch::Tensor> lltm_backward(
   return {d_old_h, d_input, d_weights, d_bias, d_old_cell};
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &lltm_forward, "LLTM forward");
-  m.def("backward", &lltm_backward, "LLTM backward");
+// Registers _C as an extension module.
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
+
+// Defines the operators
+TORCH_LIBRARY(extension_cpp, m) {
+  m.def("lltm_forward(Tensor input, Tensor weights, Tensor bias, Tensor old_h, Tensor old_cell) -> (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor)");
+  m.def("lltm_backward(Tensor grad_h, Tensor grad_cell, Tensor new_cell, Tensor input_gate, Tensor output_gate, Tensor candidate_cell, Tensor X, Tensor gate_weights, Tensor weights) -> (Tensor, Tensor, Tensor, Tensor, Tensor)");
+}
+
+// Registers CPU implementations for lltm_forward, lltm_backward
+TORCH_LIBRARY_IMPL(extension_cpp, CPU, m) {
+  m.impl("lltm_forward", &lltm_forward);
+  m.impl("lltm_backward", &lltm_backward);
 }

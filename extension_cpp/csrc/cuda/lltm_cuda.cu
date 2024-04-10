@@ -94,7 +94,7 @@ __global__ void lltm_cuda_backward_kernel(
 }
 } // namespace
 
-std::vector<torch::Tensor> lltm_cuda_forward(
+std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> lltm_cuda_forward(
     torch::Tensor input,
     torch::Tensor weights,
     torch::Tensor bias,
@@ -130,7 +130,7 @@ std::vector<torch::Tensor> lltm_cuda_forward(
   return {new_h, new_cell, input_gate, output_gate, candidate_cell, X, gates};
 }
 
-std::vector<torch::Tensor> lltm_cuda_backward(
+std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> lltm_cuda_backward(
     torch::Tensor grad_h,
     torch::Tensor grad_cell,
     torch::Tensor new_cell,
@@ -143,6 +143,9 @@ std::vector<torch::Tensor> lltm_cuda_backward(
   auto d_old_cell = torch::zeros_like(new_cell);
   auto d_gates = torch::zeros_like(gates);
 
+  auto grad_h_contig = grad_h.contiguous();
+  auto grad_cell_contig = grad_cell.contiguous();
+
   const auto batch_size = new_cell.size(0);
   const auto state_size = new_cell.size(1);
 
@@ -153,8 +156,8 @@ std::vector<torch::Tensor> lltm_cuda_backward(
     lltm_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
         d_old_cell.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
         d_gates.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        grad_h.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        grad_cell.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        grad_h_contig.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        grad_cell_contig.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
         new_cell.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
         input_gate.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
         output_gate.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
@@ -170,5 +173,11 @@ std::vector<torch::Tensor> lltm_cuda_backward(
   auto d_old_h = d_X.slice(/*dim=*/1, 0, state_size);
   auto d_input = d_X.slice(/*dim=*/1, state_size);
 
-  return {d_old_h, d_input, d_weights, d_bias, d_old_cell, d_gates};
+  return {d_old_h, d_input, d_weights, d_bias, d_old_cell};
+}
+
+// Registers CUDA implementations for lltm_forward, lltm_backward
+TORCH_LIBRARY_IMPL(extension_cpp, CUDA, m) {
+  m.impl("lltm_forward", &lltm_cuda_forward);
+  m.impl("lltm_backward", &lltm_cuda_backward);
 }
