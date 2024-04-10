@@ -4,10 +4,10 @@ requires = ["scikit-build-core>=0.3.3", "torch==2.2"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "my_extension"
+name = "extension_cpp"
 version = "0.0.1"
 authors = [{ name = "Driss Guessous", email = "drisspguessous@gmail.com" }]
-description = "A modern pytorch extension template"
+description = "A Pytorch Extension with C++ and CMake"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [

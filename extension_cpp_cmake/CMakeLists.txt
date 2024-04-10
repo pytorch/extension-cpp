@@ -28,27 +28,27 @@ set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};${PT_CMAKE_PREFIX})
 find_package(Torch REQUIRED CONFIG)
 
 #  simple_cuda source files
-file(GLOB_RECURSE CU_SOURCES src/*.cu)
-file(GLOB_RECURSE CPP_SOURCES src/*.cpp)
+file(GLOB_RECURSE CU_SOURCES csrc/*.cu)
+file(GLOB_RECURSE CPP_SOURCES csrc/*.cpp)
 MESSAGE(STATUS "CU_SOURCES: ${CU_SOURCES}")
 MESSAGE(STATUS "CPP_SOURCES: ${CPP_SOURCES}")
 
-add_library(driss_torch SHARED
-    ${CU_SOURCES}
-    ${CPP_SOURCES}
+add_library(${SKBUILD_PROJECT_NAME} SHARED
+  ${CU_SOURCES}
+  ${CPP_SOURCES}
 )
 
 # Set the library output directory, I think this makes ninja builds work
-set_target_properties(driss_torch PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/driss_torch/lib"
+set_target_properties(${SKBUILD_PROJECT_NAME} PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${SKBUILD_PROJECT_NAME}/lib"
 )
 # Add include directories to the library
-target_include_directories(driss_torch PUBLIC src/include)
+target_include_directories(${SKBUILD_PROJECT_NAME} PUBLIC src/include)
 
 # Link the library to the Torch library
-target_link_libraries(driss_torch PRIVATE ${TORCH_LIBRARIES} Python::Python)
+target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE ${TORCH_LIBRARIES} Python::Python)
 
 # Install the library to the wheel distribution
-install(TARGETS driss_torch
-  LIBRARY DESTINATION driss_torch/lib
+install(TARGETS ${SKBUILD_PROJECT_NAME}
+  LIBRARY DESTINATION ${SKBUILD_PROJECT_NAME}/lib
 )
