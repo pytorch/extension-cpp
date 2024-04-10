@@ -21,10 +21,11 @@ library_name = "extension_cpp"
 
 def get_extensions():
     debug_mode = os.getenv("DEBUG", "0") == "1"
+    use_cuda = os.getenv("USE_CUDA", "1") == "1"
     if debug_mode:
         print("Compiling in debug mode")
 
-    use_cuda = torch.cuda.is_available() and CUDA_HOME is not None
+    use_cuda = use_cuda and torch.cuda.is_available() and CUDA_HOME is not None
     extension = CUDAExtension if use_cuda else CppExtension
 
     extra_link_args = []

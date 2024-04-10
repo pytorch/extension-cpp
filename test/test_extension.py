@@ -34,22 +34,24 @@ class TestLLTM(TestCase):
         torch.testing.assert_close(result, expected)
 
     def test_correctness_cpu(self):
-        self._test_lltm_correctness("cpu")
+        self._test_correctness("cpu")
 
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_correctness_cuda(self):
-        self._test_lltm_correctness("cuda")
+        self._test_correctness("cuda")
 
     def _test_gradients(self, device):
         args = sample_inputs(device)
         torch.autograd.gradcheck(extension_cpp.ops.lltm, args)
 
     def test_gradients_cpu(self):
-        self._test_lltm_grad("cpu")
+        self._test_gradients("cpu")
 
     # This is supposed to succeed, there's probably a bug in the CUDA kernel.
     @unittest.expectedFailure
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_gradients_cuda(self):
-        self._test_lltm_grad("cuda")
+        self._test_gradients("cuda")
 
 
 if __name__ == "__main__":
