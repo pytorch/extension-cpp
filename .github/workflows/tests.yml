@@ -30,7 +30,6 @@ jobs:
       gpu-arch-type: ${{ matrix.gpu-arch-type }}
       gpu-arch-version: ${{ matrix.gpu-arch-version }}
       timeout: 120
-      test-infra-ref: master
       script: |
         set -euo pipefail
 
