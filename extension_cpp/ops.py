@@ -38,6 +38,23 @@ class LLTMFunction(torch.autograd.Function):
         return d_input, d_weights, d_bias, d_old_h, d_old_cell
 
 
+@torch.library.impl_abstract("extension_cpp::lltm_forward")
+def _(input, weights, bias, old_h, old_cell):
+    X = torch.cat([old_h, input], dim=1)
+    gate_weights = torch.nn.functional.linear(X, weights, bias)
+    gates = gate_weights.chunk(3, dim=1)
+    input_gate = torch.empty_like(gates[0])
+    output_gate = torch.empty_like(gates[1])
+    candidate_cell = torch.empty_like(gates[2])
+    new_cell = torch.empty_like(old_cell)
+    new_h = torch.empty_like(old_h)
+    if input.device.type == "cuda":
+        batch_size = old_cell.shape[0]
+        state_size = old_cell.shape[1]
+        gate_weights = gate_weights.reshape(batch_size, 3, state_size)
+    return new_h, new_cell, input_gate, output_gate, candidate_cell, X, gate_weights
+
+
 def reference_lltm(
     input: Tensor, weights: Tensor, bias: Tensor, old_h: Tensor, old_cell: Tensor
 ) -> Tuple[Tensor, Tensor]:
