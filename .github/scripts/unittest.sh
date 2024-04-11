@@ -11,3 +11,5 @@ echo '::group::Install testing utilities'
 # TODO: remove the <8 constraint on pytest when https://github.com/pytorch/vision/issues/8238 is closed
 pip install --progress-bar=off "pytest<8" pytest-mock pytest-cov expecttest!=0.2.0
 echo '::endgroup::'
+
+pytest test/ --junit-xml="${RUNNER_TEST_RESULTS_DIR}/test-results.xml" -v
