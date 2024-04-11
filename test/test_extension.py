@@ -8,11 +8,11 @@ from typing import Tuple
 import torch.nn.functional as F
 
 
-def sample_inputs(device):
+def sample_inputs(device, *, requires_grad=False):
     batch_size = 3
     features = 17
     state_size = 5
-    kwargs = {"dtype": torch.float64, "device": device, "requires_grad": True}
+    kwargs = {"dtype": torch.float64, "device": device, "requires_grad": requires_grad}
     X = torch.randn(
         batch_size,  # E: No overload variant of "randn" matches argument
         features,
@@ -41,7 +41,8 @@ class TestLLTM(TestCase):
         self._test_correctness("cuda")
 
     def _test_gradients(self, device):
-        args = sample_inputs(device)
+        args = sample_inputs(device, requires_grad=True)
+        # Use torch.autograd.gradcheck to check that gradients are OK
         torch.autograd.gradcheck(extension_cpp.ops.lltm, args)
 
     def test_gradients_cpu(self):
@@ -52,6 +53,17 @@ class TestLLTM(TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_gradients_cuda(self):
         self._test_gradients("cuda")
+
+    def _opcheck(self, device):
+        args = sample_inputs(device)
+        # Use opcheck to test that the operator was written correctly.
+        opcheck(torch.ops.extension_cpp.lltm_forward.default, args)
+
+    def test_opcheck_cpu(self):
+        self._opcheck("cpu")
+
+    def test_opcheck_cuda(self):
+        self._opcheck("cuda")
 
 
 if __name__ == "__main__":
