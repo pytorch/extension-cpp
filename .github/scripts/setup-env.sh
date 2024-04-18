@@ -39,17 +39,9 @@ conda create \
   --name ci \
   --quiet --yes \
   python="${PYTHON_VERSION}" pip \
-  ninja cmake \
-  libpng \
-  'ffmpeg<4.3'
+  ninja cmake
 conda activate ci
-conda install --quiet --yes libjpeg-turbo -c pytorch
 pip install --progress-bar=off --upgrade setuptools
-
-# See https://github.com/pytorch/vision/issues/6790
-if [[ "${PYTHON_VERSION}" != "3.11" ]]; then
-  pip install --progress-bar=off av!=10.0.0
-fi
 
 echo '::endgroup::'
 
@@ -94,7 +86,7 @@ if [[ $GPU_ARCH_TYPE == 'cuda' ]]; then
 fi
 echo '::endgroup::'
 
-echo '::group::Install third party dependencies prior to TorchVision install'
+echo '::group::Install third party dependencies prior to extension-cpp install'
 # Installing with `easy_install`, e.g. `python setup.py install` or `python setup.py develop`, has some quirks when
 # when pulling in third-party dependencies. For example:
 # - On Windows, we often hit an SSL error although `pip` can install just fine.
@@ -106,11 +98,9 @@ python setup.py egg_info
 # optional dependencies come in non-standard syntax after a blank line. Thus, we just extract the header.
 sed -e '/^$/,$d' *.egg-info/requires.txt | tee requirements.txt
 pip install --progress-bar=off -r requirements.txt
-# test dependency
-pip install numpy
 echo '::endgroup::'
 
-echo '::group::Install TorchVision'
+echo '::group::Install extension-cpp'
 python setup.py develop
 echo '::endgroup::'
 
