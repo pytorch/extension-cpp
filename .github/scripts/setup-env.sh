@@ -106,6 +106,8 @@ python setup.py egg_info
 # optional dependencies come in non-standard syntax after a blank line. Thus, we just extract the header.
 sed -e '/^$/,$d' *.egg-info/requires.txt | tee requirements.txt
 pip install --progress-bar=off -r requirements.txt
+# test dependency
+pip install numpy
 echo '::endgroup::'
 
 echo '::group::Install TorchVision'
