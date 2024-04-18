@@ -62,6 +62,7 @@ class TestLLTM(TestCase):
     def test_opcheck_cpu(self):
         self._opcheck("cpu")
 
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_opcheck_cuda(self):
         self._opcheck("cuda")
 
