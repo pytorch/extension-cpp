@@ -8,37 +8,41 @@ __all__ = ["lltm", "reference_lltm"]
 def lltm(
     input: Tensor, weights: Tensor, bias: Tensor, old_h: Tensor, old_cell: Tensor
 ) -> Tuple[Tensor, Tensor]:
-    return LLTMFunction.apply(input, weights, bias, old_h, old_cell)
+    """The lltm API"""
+    outputs = torch.ops.extension_cpp.lltm_forward.default(
+        input, weights, bias, old_h, old_cell
+    )
+    new_h, new_cell = outputs[:2]
+    return new_h, new_cell
 
 
-class LLTMFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, weights, bias, old_h, old_cell):
-        outputs = torch.ops.extension_cpp.lltm_forward.default(
-            input, weights, bias, old_h, old_cell
-        )
-        new_h, new_cell = outputs[:2]
-        variables = list(outputs[1:]) + [weights]
-        ctx.save_for_backward(*variables)
-
-        return new_h, new_cell
-
-    @staticmethod
-    @torch.autograd.function.once_differentiable
-    def backward(ctx, grad_h, grad_cell):
-        (
-            d_old_h,
-            d_input,
-            d_weights,
-            d_bias,
-            d_old_cell,
-        ) = torch.ops.extension_cpp.lltm_backward.default(
-            grad_h, grad_cell, *ctx.saved_tensors
-        )
-        return d_input, d_weights, d_bias, d_old_h, d_old_cell
+# This is the backward for lltm_forward.
+# lltm_forward has 7 returns so they all get gradients.
+def backward(ctx, grad_h, grad_cell, _0, _1, _2, _3, _4):
+    (
+        d_old_h,
+        d_input,
+        d_weights,
+        d_bias,
+        d_old_cell,
+    ) = torch.ops.extension_cpp.lltm_backward.default(
+        grad_h, grad_cell, *ctx.saved_tensors
+    )
+    return d_input, d_weights, d_bias, d_old_h, d_old_cell
 
 
-@torch.library.impl_abstract("extension_cpp::lltm_forward")
+def setup_context(ctx, inputs, output):
+    weights = inputs[1]
+    new_h, new_cell = output[:2]
+    variables = list(output[1:]) + [weights]
+    ctx.save_for_backward(*variables)
+
+
+torch.library.register_autograd(
+    "extension_cpp::lltm_forward", backward, setup_context=setup_context)
+
+
+@torch.library.register_fake("extension_cpp::lltm_forward")
 def _(input, weights, bias, old_h, old_cell):
     X = torch.cat([old_h, input], dim=1)
     gate_weights = torch.nn.functional.linear(X, weights, bias)
