@@ -1,11 +1,11 @@
 import torch
 from torch import Tensor
 
-__all__ = ["mymuladd"]
+__all__ = ["mymuladd", "myadd_out"]
 
 
-def mymuladd(a: Tensor, b: Tensor, c: float):
-    """Your docstring here"""
+def mymuladd(a: Tensor, b: Tensor, c: float) -> Tensor:
+    """Performs a * b + c in an efficient fused kernel"""
     return torch.ops.extension_cpp.mymuladd.default(a, b, c)
 
 
@@ -56,3 +56,8 @@ def _(a, b):
     torch._check(b.dtype == torch.float)
     torch._check(a.device == b.device)
     return torch.empty_like(a)
+
+
+def myadd_out(a: Tensor, b: Tensor, out: Tensor) -> None:
+    """Writes a + b into out"""
+    torch.ops.extension_cpp.myadd_out.default(a, b, out)
