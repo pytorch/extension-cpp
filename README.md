@@ -2,10 +2,8 @@
 
 An example of writing a C++/CUDA extension for PyTorch. See
 [here](http://pytorch.org/tutorials/advanced/cpp_extension.html) for the accompanying tutorial.
-This repo demonstrates how to write an example `extension_cpp.ops.mymuladd`
+This repo demonstrates how to write an example `extension_cpp.ops.lltm`
 custom op that has both custom CPU and CUDA kernels.
-
-The examples in this repo work with PyTorch 2.4+.
 
 To build:
 ```
