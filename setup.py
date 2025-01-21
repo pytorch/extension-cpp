@@ -18,6 +18,11 @@ from torch.utils.cpp_extension import (
 
 library_name = "extension_cpp"
 
+if torch.__version__ >= "2.6.0":
+    py_limited_api = True
+else:
+    py_limited_api = False
+
 
 def get_extensions():
     debug_mode = os.getenv("DEBUG", "0") == "1"
@@ -59,6 +64,7 @@ def get_extensions():
             sources,
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_link_args,
+            py_limited_api=py_limited_api,
         )
     ]
 
@@ -71,9 +77,10 @@ setup(
     packages=find_packages(),
     ext_modules=get_extensions(),
     install_requires=["torch"],
-    description="Example of PyTorch cpp and CUDA extensions",
+    description="Example of PyTorch C++ and CUDA extensions",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/pytorch/extension-cpp",
     cmdclass={"build_ext": BuildExtension},
+    options={"bdist_wheel": {"py_limited_api": "cp39"}} if py_limited_api else {},
 )
