@@ -9,17 +9,12 @@ The examples in this repo work with PyTorch 2.4+.
 
 To build:
 ```
-pip install .
+pip install --no-build-isolation -e .
 ```
 
 To test:
 ```
 python test/test_extension.py
-```
-
-To benchmark Python vs. C++ vs. CUDA:
-```
-python test/benchmark.py
 ```
 
 ## Authors
