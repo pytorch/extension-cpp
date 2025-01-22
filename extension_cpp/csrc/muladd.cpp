@@ -61,9 +61,6 @@ void myadd_out_cpu(const at::Tensor& a, const at::Tensor& b, at::Tensor& out) {
   }
 }
 
-// Registers _C as a Python extension module.
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
-
 // Defines the operators
 TORCH_LIBRARY(extension_cpp, m) {
   m.def("mymuladd(Tensor a, Tensor b, float c) -> Tensor");
