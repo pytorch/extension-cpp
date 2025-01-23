@@ -7,8 +7,9 @@
 
 extern "C" {
   /* Creates a dummy empty _C module that can be imported from Python.
-     The import from Python will load the .so associated with this extension
-     built from this file, so that all the TORCH_LIBRARY calls below are run.*/
+     The import from Python will load the .so consisting of this file
+     in this extension, so that the TORCH_LIBRARY static initializers
+     below are run. */
   PyObject* PyInit__C(void)
   {
       static struct PyModuleDef module_def = {
