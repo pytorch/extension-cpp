@@ -38,6 +38,7 @@ def get_extensions():
         "cxx": [
             "-O3" if not debug_mode else "-O0",
             "-fdiagnostics-color=always",
+            "-DPy_LIMITED_API=0x03090000",
         ],
         "nvcc": [
             "-O3" if not debug_mode else "-O0",
