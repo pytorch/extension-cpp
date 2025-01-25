@@ -1,0 +1,65 @@
+[build-system]
+# Speicfy which version of torch to use
+requires = ["scikit-build-core>=0.3.3", "torch==2.2"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "extension_cpp"
+version = "0.0.1"
+authors = [{ name = "Driss Guessous", email = "drisspguessous@gmail.com" }]
+description = "A Pytorch Extension with C++ and CMake"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "black==23.3.0",
+    "usort==1.0.6",
+    "ufmt==2.1.0",
+    "libcst==1.0.1",
+    "pre-commit==3.6.0",
+    "bumpver",
+    "pip-tools",
+    "pytest",
+]
+
+# For a more comprehensive list of options see this link:
+# https://scikit-build-core.readthedocs.io/en/latest/configuration.html
+
+[tool.scikit-build]
+cmake.verbose = true
+logging.level = "INFO"
+cmake.build-type = "RelWithDebInfo"
+build-dir = "build"
+
+# Specify CMake defines:
+[tool.scikit-build.cmake.define]
+TORCH_CUDA_ARCH_LIST="9.0"
+
+[tool.usort]
+first_party_detection = false
+
+[tool.black]
+target-version = ["py38"]
+line-length = 99
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
