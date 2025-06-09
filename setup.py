@@ -65,6 +65,7 @@ def get_extensions():
     extra_link_args = []
     extra_compile_args = {"cxx": []}
     if extension == CUDAExtension:
+        print("CUDA is available, compile using CUDAExtension")
         extra_compile_args = {
             "cxx": ["-O3" if not debug_mode else "-O0",
                     "-fdiagnostics-color=always",
@@ -72,7 +73,7 @@ def get_extensions():
             "nvcc": ["-O3" if not debug_mode else "-O0"]
         }
     elif extension == SyclExtension:
-        print("SYCLExtension branch, set extra_compile_args")
+        print("XPU is available, compile using SyclExtension")
         extra_compile_args = {
             "cxx": ["-O3" if not debug_mode else "-O0",
                     "-fdiagnostics-color=always",
