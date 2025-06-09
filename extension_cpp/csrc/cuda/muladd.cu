@@ -1,4 +1,6 @@
-#include <torch/extension.h>
+#include <ATen/Operators.h>
+#include <torch/all.h>
+#include <torch/library.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -18,7 +20,7 @@ at::Tensor mymuladd_cuda(const at::Tensor& a, const at::Tensor& b, double c) {
   TORCH_INTERNAL_ASSERT(b.device().type() == at::DeviceType::CUDA);
   at::Tensor a_contig = a.contiguous();
   at::Tensor b_contig = b.contiguous();
-  at::Tensor result = torch::empty(a_contig.sizes(), a_contig.options());
+  at::Tensor result = at::empty(a_contig.sizes(), a_contig.options());
   const float* a_ptr = a_contig.data_ptr<float>();
   const float* b_ptr = b_contig.data_ptr<float>();
   float* result_ptr = result.data_ptr<float>();
@@ -41,7 +43,7 @@ at::Tensor mymul_cuda(const at::Tensor& a, const at::Tensor& b) {
   TORCH_INTERNAL_ASSERT(b.device().type() == at::DeviceType::CUDA);
   at::Tensor a_contig = a.contiguous();
   at::Tensor b_contig = b.contiguous();
-  at::Tensor result = torch::empty(a_contig.sizes(), a_contig.options());
+  at::Tensor result = at::empty(a_contig.sizes(), a_contig.options());
   const float* a_ptr = a_contig.data_ptr<float>();
   const float* b_ptr = b_contig.data_ptr<float>();
   float* result_ptr = result.data_ptr<float>();
