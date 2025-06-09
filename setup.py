@@ -22,7 +22,7 @@ library_name = "extension_cpp"
 
 # Configure Py_LIMITED_API based on PyTorch version
 if torch.__version__ >= "2.6.0":
-    py_limited_api = False
+    py_limited_api = True
 else:
     py_limited_api = False
 
@@ -74,15 +74,11 @@ def get_extensions():
     elif extension == SyclExtension:
         print("SYCLExtension branch, set extra_compile_args")
         extra_compile_args = {
-            "cxx": ["-O3" if not debug_mode else "-O0"],
+            "cxx": ["-O3" if not debug_mode else "-O0",
+                    "-fdiagnostics-color=always",
+                    "-DPy_LIMITED_API=0x03090000"],
             "sycl": ["-O3" if not debug_mode else "-O0"]
         }
-        # extra_compile_args = {
-        #     "cxx": ["-O3" if not debug_mode else "-O0",
-        #             "-fdiagnostics-color=always",
-        #             "-DPy_LIMITED_API=0x03090000"],
-        #     "sycl": ["-O3" if not debug_mode else "-O0"]
-        # }
     else:
         extra_compile_args["cxx"] = [
             "-O3" if not debug_mode else "-O0",
@@ -93,7 +89,7 @@ def get_extensions():
         if extension == CUDAExtension:
             extra_compile_args["nvcc"].append("-g")
             extra_link_args.extend(["-O0", "-g"])
-        elif extension == SYCLExtension:
+        elif extension == SyclExtension:
             extra_compile_args["sycl"].append("-g")
             extra_link_args.extend(["-O0", "-g"])
 
