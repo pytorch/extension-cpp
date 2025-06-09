@@ -1,0 +1,189 @@
+#include <c10/xpu/XPUStream.h>
+#include <sycl/sycl.hpp>
+#include <ATen/Operators.h>
+#include <torch/all.h>
+#include <torch/library.h>
+
+namespace extension_cpp {
+
+
+// MulAdd Kernel: result = a * b + c
+static void muladd_kernel(
+    int numel, const float* a, const float* b, float c, float* result,
+    const sycl::nd_item<1>& item) {
+    int idx = item.get_global_id(0);
+    if (idx < numel) {
+        result[idx] = a[idx] * b[idx] + c;
+    }
+}
+
+// Mul Kernel: result = a * b
+static void mul_kernel(
+    int numel, const float* a, const float* b, float* result,
+    const sycl::nd_item<1>& item) {
+    int idx = item.get_global_id(0);
+    if (idx < numel) {
+        result[idx] = a[idx] * b[idx];
+    }
+}
+
+// Add Kernel: result = a + b
+static void add_kernel(
+    int numel, const float* a, const float* b, float* result,
+    const sycl::nd_item<1>& item) {
+    int idx = item.get_global_id(0);
+    if (idx < numel) {
+        result[idx] = a[idx] + b[idx];
+    }
+}
+
+
+class MulAddKernelFunctor {
+public:
+    MulAddKernelFunctor(int _numel, const float* _a, const float* _b, float _c, float* _result)
+        : numel(_numel), a(_a), b(_b), c(_c), result(_result) {}
+    
+    void operator()(const sycl::nd_item<1>& item) const {
+        muladd_kernel(numel, a, b, c, result, item);
+    }
+    
+private:
+    int numel;
+    const float* a;
+    const float* b;
+    float c;
+    float* result;
+};
+
+class MulKernelFunctor {
+public:
+    MulKernelFunctor(int _numel, const float* _a, const float* _b, float* _result)
+        : numel(_numel), a(_a), b(_b), result(_result) {}
+    
+    void operator()(const sycl::nd_item<1>& item) const {
+        mul_kernel(numel, a, b, result, item);
+    }
+    
+private:
+    int numel;
+    const float* a;
+    const float* b;
+    float* result;
+};
+
+class AddKernelFunctor {
+public:
+    AddKernelFunctor(int _numel, const float* _a, const float* _b, float* _result)
+        : numel(_numel), a(_a), b(_b), result(_result) {}
+    
+    void operator()(const sycl::nd_item<1>& item) const {
+        add_kernel(numel, a, b, result, item);
+    }
+    
+private:
+    int numel;
+    const float* a;
+    const float* b;
+    float* result;
+};
+
+
+at::Tensor mymuladd_xpu(const at::Tensor& a, const at::Tensor& b, double c) {
+    TORCH_CHECK(a.sizes() == b.sizes(), "a and b must have the same shape");
+    TORCH_CHECK(a.dtype() == at::kFloat, "a must be a float tensor");
+    TORCH_CHECK(b.dtype() == at::kFloat, "b must be a float tensor");
+    TORCH_CHECK(a.device().is_xpu(), "a must be an XPU tensor");
+    TORCH_CHECK(b.device().is_xpu(), "b must be an XPU tensor");
+
+    at::Tensor a_contig = a.contiguous();
+    at::Tensor b_contig = b.contiguous();
+    at::Tensor result = at::empty_like(a_contig);
+
+    const float* a_ptr = a_contig.data_ptr<float>();
+    const float* b_ptr = b_contig.data_ptr<float>();
+    float* res_ptr = result.data_ptr<float>();
+    int numel = a_contig.numel();
+
+    sycl::queue& queue = c10::xpu::getCurrentXPUStream().queue();
+    constexpr int threads = 256;
+    int blocks = (numel + threads - 1) / threads;
+
+    queue.submit([&](sycl::handler& cgh) {
+        cgh.parallel_for<MulAddKernelFunctor>(
+            sycl::nd_range<1>(blocks * threads, threads),
+            MulAddKernelFunctor(numel, a_ptr, b_ptr, static_cast<float>(c), res_ptr)
+        );
+    });
+    return result;
+}
+
+at::Tensor mymul_xpu(const at::Tensor& a, const at::Tensor& b) {
+    TORCH_CHECK(a.sizes() == b.sizes(), "a and b must have the same shape");
+    TORCH_CHECK(a.dtype() == at::kFloat, "a must be a float tensor");
+    TORCH_CHECK(b.dtype() == at::kFloat, "b must be a float tensor");
+    TORCH_CHECK(a.device().is_xpu(), "a must be an XPU tensor");
+    TORCH_CHECK(b.device().is_xpu(), "b must be an XPU tensor");
+
+    at::Tensor a_contig = a.contiguous();
+    at::Tensor b_contig = b.contiguous();
+    at::Tensor result = at::empty_like(a_contig);
+
+    const float* a_ptr = a_contig.data_ptr<float>();
+    const float* b_ptr = b_contig.data_ptr<float>();
+    float* res_ptr = result.data_ptr<float>();
+    int numel = a_contig.numel();
+
+    sycl::queue& queue = c10::xpu::getCurrentXPUStream().queue();
+    constexpr int threads = 256;
+    int blocks = (numel + threads - 1) / threads;
+
+    queue.submit([&](sycl::handler& cgh) {
+        cgh.parallel_for<MulKernelFunctor>(
+            sycl::nd_range<1>(blocks * threads, threads),
+            MulKernelFunctor(numel, a_ptr, b_ptr, res_ptr)
+        );
+    });
+    return result;
+}
+
+void myadd_out_xpu(const at::Tensor& a, const at::Tensor& b, at::Tensor& out) {
+    TORCH_CHECK(a.sizes() == b.sizes(), "a and b must have the same shape");
+    TORCH_CHECK(b.sizes() == out.sizes(), "b and out must have the same shape");
+    TORCH_CHECK(a.dtype() == at::kFloat, "a must be a float tensor");
+    TORCH_CHECK(b.dtype() == at::kFloat, "b must be a float tensor");
+    TORCH_CHECK(out.is_contiguous(), "out must be contiguous");
+    TORCH_CHECK(a.device().is_xpu(), "a must be an XPU tensor");
+    TORCH_CHECK(b.device().is_xpu(), "b must be an XPU tensor");
+    TORCH_CHECK(out.device().is_xpu(), "out must be an XPU tensor");
+
+    at::Tensor a_contig = a.contiguous();
+    at::Tensor b_contig = b.contiguous();
+
+    const float* a_ptr = a_contig.data_ptr<float>();
+    const float* b_ptr = b_contig.data_ptr<float>();
+    float* out_ptr = out.data_ptr<float>();
+    int numel = a_contig.numel();
+
+    sycl::queue& queue = c10::xpu::getCurrentXPUStream().queue();
+    constexpr int threads = 256;
+    int blocks = (numel + threads - 1) / threads;
+
+    queue.submit([&](sycl::handler& cgh) {
+        cgh.parallel_for<AddKernelFunctor>(
+            sycl::nd_range<1>(blocks * threads, threads),
+            AddKernelFunctor(numel, a_ptr, b_ptr, out_ptr)
+        );
+    });
+}
+
+// ==================================================
+// Register Sycl Implementations to Torch Library
+// ==================================================
+
+TORCH_LIBRARY_IMPL(extension_cpp, XPU, m) {
+    m.impl("mymuladd", mymuladd_xpu);
+    m.impl("mymul", mymul_xpu);
+    m.impl("myadd_out", myadd_out_xpu);
+}
+
+} // namespace extension_cpp

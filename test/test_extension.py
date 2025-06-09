@@ -37,9 +37,13 @@ class TestMyMulAdd(TestCase):
     def test_correctness_cpu(self):
         self._test_correctness("cpu")
 
-    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    @unittest.skipIf(not torch.cuda.is_available(), "requires CUDA")
     def test_correctness_cuda(self):
         self._test_correctness("cuda")
+
+    @unittest.skipIf(not torch.xpu.is_available(), "requires Intel GPU")
+    def test_correctness_xpu(self):
+        self._test_correctness("xpu")
 
     def _test_gradients(self, device):
         samples = self.sample_inputs(device, requires_grad=True)
@@ -57,9 +61,13 @@ class TestMyMulAdd(TestCase):
     def test_gradients_cpu(self):
         self._test_gradients("cpu")
 
-    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    @unittest.skipIf(not torch.cuda.is_available(), "requires CUDA")
     def test_gradients_cuda(self):
         self._test_gradients("cuda")
+
+    @unittest.skipIf(not torch.xpu.is_available(), "requires Intel GPU")
+    def test_gradients_xpu(self):
+        self._test_gradients("xpu")
 
     def _opcheck(self, device):
         # Use opcheck to check for incorrect usage of operator registration APIs
@@ -71,10 +79,13 @@ class TestMyMulAdd(TestCase):
     def test_opcheck_cpu(self):
         self._opcheck("cpu")
 
-    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    @unittest.skipIf(not torch.cuda.is_available(), "requires CUDA")
     def test_opcheck_cuda(self):
         self._opcheck("cuda")
 
+    @unittest.skipIf(not torch.xpu.is_available(), "requires xpu")
+    def test_opcheck_xpu(self):
+        self._opcheck("xpu")
 
 class TestMyAddOut(TestCase):
     def sample_inputs(self, device, *, requires_grad=False):
@@ -107,9 +118,13 @@ class TestMyAddOut(TestCase):
     def test_opcheck_cpu(self):
         self._opcheck("cpu")
 
-    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    @unittest.skipIf(not torch.cuda.is_available(), "requires CUDA")
     def test_opcheck_cuda(self):
         self._opcheck("cuda")
+
+    @unittest.skipIf(not torch.xpu.is_available(), "requires xpu")
+    def test_opcheck_xpu(self):
+        self._opcheck("xpu")
 
 
 if __name__ == "__main__":
