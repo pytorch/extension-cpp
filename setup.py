@@ -130,7 +130,10 @@ setup(
     packages=find_packages(),
     ext_modules=get_extensions(),
     install_requires=["torch"],
-    description="Hybrid PyTorch extension supporting CUDA/SYCL/C++",
+    description="Example of PyTorch C++ and CUDA/Sycl extensions",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/pytorch/extension-cpp", 
     cmdclass={"build_ext": BuildExtension},
     options={"bdist_wheel": {"py_limited_api": "cp39"}} if py_limited_api else {},
 )
