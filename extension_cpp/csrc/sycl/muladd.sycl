@@ -1,3 +1,5 @@
+// Copyright (c) 2025 Intel Corporation
+
 #include <c10/xpu/XPUStream.h>
 #include <sycl/sycl.hpp>
 #include <ATen/Operators.h>
