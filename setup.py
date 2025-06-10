@@ -20,7 +20,11 @@ except ImportError:
 
 library_name = "extension_cpp"
 
-# Configure Py_LIMITED_API based on PyTorch version
+# NOTE: PyTorch versions < 2.6 use torch.extension.h which depends on pybind11,
+#       and pybind11 requires full access to Python's C API (including internal
+#       structures like PyObject). This makes it incompatible with Py_LIMITED_API
+#       which restricts access to only stable Python C API symbols.
+#       For Py_LIMITED_API compatibility, use torch.library.h instead (PyTorch 2.6+).
 if torch.__version__ >= "2.6.0":
     py_limited_api = True
 else:
