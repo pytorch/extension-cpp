@@ -109,8 +109,6 @@ def get_extensions():
 
     sources += backend_sources
 
-    print("sources",sources)
-    print(len(sources))
     # Construct extension
     ext_modules = [
         extension(
