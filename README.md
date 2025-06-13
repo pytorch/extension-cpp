@@ -1,4 +1,4 @@
-# C++/CUDA Extensions in PyTorch
+# C++/CUDA/SYCL Extensions in PyTorch
 
 An example of writing a C++/CUDA/Sycl extension for PyTorch. See
 [here](https://pytorch.org/tutorials/advanced/cpp_custom_ops.html) for the accompanying tutorial.
