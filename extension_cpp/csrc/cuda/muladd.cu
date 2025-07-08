@@ -54,7 +54,7 @@ at::Tensor mymul_cuda(const at::Tensor& a, const at::Tensor& b) {
 
 __global__ void add_kernel(int numel, const float* a, const float* b, float* result) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < numel) result[idx] = a[idx] * b[idx];
+  if (idx < numel) result[idx] = a[idx] + b[idx];
 }
 
 void myadd_out_cuda(const at::Tensor& a, const at::Tensor& b, at::Tensor& out) {
