@@ -97,6 +97,13 @@ class TestMyAddOut(TestCase):
             expected = torch.add(*args[:2])
             torch.testing.assert_close(result, expected)
 
+    def test_correctness_cpu(self):
+        self._test_correctness("cpu")
+
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    def test_correctness_cuda(self):
+        self._test_correctness("cuda")
+
     def _opcheck(self, device):
         # Use opcheck to check for incorrect usage of operator registration APIs
         samples = self.sample_inputs(device, requires_grad=True)
