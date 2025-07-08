@@ -6,6 +6,7 @@ import extension_cpp
 from torch import Tensor
 from typing import Tuple
 import torch.nn.functional as F
+import torch.nn as nn
 
 
 def reference_muladd(a, b, c):
@@ -117,6 +118,55 @@ class TestMyAddOut(TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_opcheck_cuda(self):
         self._opcheck("cuda")
+
+
+class TestTorchCompileStreamSync(TestCase):
+    """Test for GitHub issue pytorch/pytorch#157363 - stream synchronization with torch.compile"""
+    
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    def test_compile_with_linear_layer(self):
+        """Test custom CUDA kernels with nn.Linear + torch.compile (the original failing case)"""
+        
+        class Model(nn.Module):
+            def __init__(self, size):
+                super().__init__()
+                self.linear = nn.Linear(size, size, device="cuda", dtype=torch.float32)
+            
+            def forward(self, x):
+                return extension_cpp.ops.mymuladd(self.linear(x), self.linear(x), 0.0)
+        
+        # Test sizes that previously failed
+        for size in [1000, 5000, 10000]:
+            with self.subTest(size=size):
+                torch.manual_seed(42)
+                model = Model(size)
+                x = torch.randn((1, size), device="cuda", dtype=torch.float32)
+                
+                with torch.no_grad():
+                    expected = model(x)
+                    compiled_model = torch.compile(model, mode="reduce-overhead", fullgraph=True)
+                    actual = compiled_model(x)
+                
+                torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
+    def test_compile_custom_only(self):
+        """Test custom operations alone with torch.compile"""
+        
+        def model(x):
+            return extension_cpp.ops.mymuladd(x, x, 1.0)
+        
+        for size in [1000, 5000, 10000]:
+            with self.subTest(size=size):
+                torch.manual_seed(42)
+                x = torch.randn((size,), device="cuda", dtype=torch.float32)
+                
+                with torch.no_grad():
+                    expected = model(x)
+                    compiled_model = torch.compile(model, mode="reduce-overhead", fullgraph=True)
+                    actual = compiled_model(x)
+                
+                torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
 
 
 if __name__ == "__main__":
