@@ -147,7 +147,7 @@ class TestTorchCompileStreamSync(TestCase):
                     compiled_model = torch.compile(model, mode="reduce-overhead", fullgraph=True)
                     actual = compiled_model(x)
                 
-                torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
+                self.assertEqual(actual, expected)
 
     @unittest.skipIf(not torch.cuda.is_available(), "requires cuda")
     def test_compile_custom_only(self):
@@ -166,7 +166,7 @@ class TestTorchCompileStreamSync(TestCase):
                     compiled_model = torch.compile(model, mode="reduce-overhead", fullgraph=True)
                     actual = compiled_model(x)
                 
-                torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
+                self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":
