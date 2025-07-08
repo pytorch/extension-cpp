@@ -4,6 +4,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <ATen/cuda/CUDAContext.h>
 
 namespace extension_cpp {
 
@@ -26,7 +27,8 @@ at::Tensor mymuladd_cuda(const at::Tensor& a, const at::Tensor& b, double c) {
   float* result_ptr = result.data_ptr<float>();
 
   int numel = a_contig.numel();
-  muladd_kernel<<<(numel+255)/256, 256>>>(numel, a_ptr, b_ptr, c, result_ptr);
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+  muladd_kernel<<<(numel+255)/256, 256, 0, stream>>>(numel, a_ptr, b_ptr, c, result_ptr);
   return result;
 }
 
@@ -48,7 +50,8 @@ at::Tensor mymul_cuda(const at::Tensor& a, const at::Tensor& b) {
   const float* b_ptr = b_contig.data_ptr<float>();
   float* result_ptr = result.data_ptr<float>();
   int numel = a_contig.numel();
-  mul_kernel<<<(numel+255)/256, 256>>>(numel, a_ptr, b_ptr, result_ptr);
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+  mul_kernel<<<(numel+255)/256, 256, 0, stream>>>(numel, a_ptr, b_ptr, result_ptr);
   return result;
 }
 
@@ -73,7 +76,8 @@ void myadd_out_cuda(const at::Tensor& a, const at::Tensor& b, at::Tensor& out) {
   const float* b_ptr = b_contig.data_ptr<float>();
   float* result_ptr = out.data_ptr<float>();
   int numel = a_contig.numel();
-  add_kernel<<<(numel+255)/256, 256>>>(numel, a_ptr, b_ptr, result_ptr);
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+  add_kernel<<<(numel+255)/256, 256, 0, stream>>>(numel, a_ptr, b_ptr, result_ptr);
 }
 
 
