@@ -1,0 +1,6 @@
+[build-system]
+requires = [
+    "setuptools",
+    "torch>=2.10.0",
+]
+build-backend = "setuptools.build_meta"

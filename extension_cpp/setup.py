@@ -80,7 +80,9 @@ setup(
     ext_modules=get_extensions(),
     install_requires=["torch"],
     description="Example of PyTorch C++ and CUDA extensions",
-    long_description=open("README.md").read(),
+    long_description=open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "README.md")
+    ).read(),
     long_description_content_type="text/markdown",
     url="https://github.com/pytorch/extension-cpp",
     cmdclass={"build_ext": BuildExtension},

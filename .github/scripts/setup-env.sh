@@ -93,6 +93,7 @@ echo '::group::Install third party dependencies prior to extension-cpp install'
 # - It happily pulls in pre-releases, which can lead to more problems down the line.
 #   `pip` does not unless explicitly told to do so.
 # Thus, we use `easy_install` to extract the third-party dependencies here and install them upfront with `pip`.
+pushd extension_cpp
 python setup.py egg_info
 # The requires.txt cannot be used with `pip install -r` directly. The requirements are listed at the top and the
 # optional dependencies come in non-standard syntax after a blank line. Thus, we just extract the header.
@@ -100,8 +101,15 @@ sed -e '/^$/,$d' *.egg-info/requires.txt | tee requirements.txt
 pip install --progress-bar=off -r requirements.txt
 echo '::endgroup::'
 
-echo '::group::Install extension-cpp'
-python setup.py develop
+echo '::group::Install extension_cpp (standard ATen API)'
+pip install -e . --no-build-isolation
+popd
+echo '::endgroup::'
+
+echo '::group::Install extension_cpp_stable (stable ABI)'
+pushd extension_cpp_stable
+pip install -e . --no-build-isolation
+popd
 echo '::endgroup::'
 
 echo '::group::Collect environment information'

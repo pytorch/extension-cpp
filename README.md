@@ -1,18 +1,42 @@
 # C++/CUDA Extensions in PyTorch
 
-An example of writing a C++/CUDA extension for PyTorch. See
-[here](https://pytorch.org/tutorials/advanced/cpp_custom_ops.html) for the accompanying tutorial.
-This repo demonstrates how to write an example `extension_cpp.ops.mymuladd`
-custom op that has both custom CPU and CUDA kernels.
+This repository contains two example C++/CUDA extensions for PyTorch:
 
-The examples in this repo work with PyTorch 2.4+.
+1. **extension_cpp** - Uses the standard ATen/LibTorch API
+2. **extension_cpp_stable** - Uses the [LibTorch Stable ABI](https://pytorch.org/docs/main/notes/libtorch_stable_abi.html)
 
-To build:
+Both extensions demonstrate how to write an example `mymuladd` custom op that has both
+custom CPU and CUDA kernels.
+
+## extension_cpp (Standard ATen API)
+
+Uses the full ATen/LibTorch API. This is the traditional way of writing PyTorch extensions.
+See [this tutorial](https://pytorch.org/tutorials/advanced/cpp_custom_ops.html) for more details.
+
+## extension_cpp_stable (Stable ABI)
+
+Uses the LibTorch Stable ABI to ensure that the extension built can be run with any version
+of PyTorch >= 2.10.0, without needing to recompile for each PyTorch version.
+
+The `extension_cpp_stable` examples require PyTorch 2.10+.
+
+## Building
+
+To build extension_cpp (standard API):
 ```
+cd extension_cpp
 pip install --no-build-isolation -e .
 ```
 
-To test:
+To build extension_cpp_stable (stable ABI):
+```
+cd extension_cpp_stable
+pip install --no-build-isolation -e .
+```
+
+## Testing
+
+To test both extensions:
 ```
 python test/test_extension.py
 ```
