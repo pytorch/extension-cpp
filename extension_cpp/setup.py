@@ -33,6 +33,14 @@ def get_extensions():
     use_cuda = use_cuda and torch.cuda.is_available() and CUDA_HOME is not None
     extension = CUDAExtension if use_cuda else CppExtension
 
+    NVCC_FLAGS = [
+        "-O3" if not debug_mode else "-O0",
+    ]
+    if os.name == "nt":
+        NVCC_FLAGS += [
+            "-DUSE_CUDA=1",
+        ]
+
     extra_link_args = []
     extra_compile_args = {
         "cxx": [
@@ -40,9 +48,7 @@ def get_extensions():
             "-fdiagnostics-color=always",
             "-DPy_LIMITED_API=0x03090000",  # min CPython version 3.9
         ],
-        "nvcc": [
-            "-O3" if not debug_mode else "-O0",
-        ],
+        "nvcc": NVCC_FLAGS,
     }
     if debug_mode:
         extra_compile_args["cxx"].append("-g")
