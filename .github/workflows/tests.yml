@@ -27,6 +27,10 @@ jobs:
       contents: read
     with:
       repository: pytorch/extension-cpp
+      # linux_job_v3 defaults this to refs/heads/main, which this repo does not
+      # have -- its default branch is master -- so the checkout dies with
+      # "fatal: couldn't find remote ref refs/heads/main".
+      additional-fetch-refs: ""
       runner: ${{ matrix.runner }}
       gpu-arch-type: ${{ matrix.gpu-arch-type }}
       gpu-arch-version: ${{ matrix.gpu-arch-version }}
