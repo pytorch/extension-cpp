@@ -10,7 +10,7 @@ extern "C" {
      The import from Python will load the .so consisting of this file
      in this extension, so that the TORCH_LIBRARY static initializers
      below are run. */
-  PyObject* PyInit__C(void)
+  PyMODINIT_FUNC PyInit__C(void)
   {
       static struct PyModuleDef module_def = {
           PyModuleDef_HEAD_INIT,
